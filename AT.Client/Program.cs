@@ -1,0 +1,36 @@
+using AT.Client;
+using AT.Client.Services.Contracts;
+using AT.Client.Services.Implementations;
+using AT.Client.States;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using AT.Client.Services.Interface;
+using AT.Client.Services.User;
+using AT.Client.Services.ManagerTask;
+using AT.Client.Services.SearchOrder;
+using AT.Client.Services.Departments;
+using Blazored.Toast;
+using AT.Client.Services.ProgressHistory;
+
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
+
+builder.Services.AddOptions();
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<IdentityAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<IdentityAuthenticationStateProvider>());
+builder.Services.AddScoped<IAuthorizeApi, AuthorizeApi>();
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+builder.Services.AddScoped<SearchAccountService>();
+builder.Services.AddScoped<ProgressService>();
+builder.Services.AddScoped<IProjectTypeService, ProjectTypeService>();
+builder.Services.AddScoped<IProgressService, ProgressService>();
+builder.Services.AddScoped<IManagerUserService, ManagerUserService>();
+builder.Services.AddScoped<IManagerTaskService, ManagerTaskService>();
+builder.Services.AddScoped<ISearchOrderService, SearchOrderService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<ITaskProgressHistoryService,TaskProgressHistoryService>();
+builder.Services.AddBlazoredToast();
+await builder.Build().RunAsync();

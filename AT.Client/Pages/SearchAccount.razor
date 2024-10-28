@@ -1,0 +1,122 @@
+﻿@page "/search-account"
+@using AT.Share.Model
+@inject SearchAccountService OrderService
+@layout EmptyLayout  // Sử dụng layout trống
+@inject HttpClient HttpClient
+@using System.Runtime.Serialization.Json
+@using System.Text.Json
+<PageTitle>Counter</PageTitle>
+<div class="container">
+    <br />
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card card-sm">
+                <div class="card-body row no-gutters align-items-center">
+                    <div class="col-auto">
+                        <i class="fas fa-search h4 text-body"></i>
+                    </div>
+                    <!--end of col-->
+                    <div class="col">
+                        <input class="form-control form-control-lg form-control-borderless" type="search" @bind="orderId" placeholder="Search Account Code">
+                    </div>
+                    <!--end of col-->
+                    <div class="col-auto">
+                        <button class="btn btn-lg btn-success" @onclick="SearchOrder">Search</button>
+                    </div>
+                    <!--end of col-->
+                </div>
+            </div>
+        </div>
+        <!--end of col-->
+    </div>
+</div>
+@if (accountInfo != null)
+{
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Thông Tin Tài Khoản</h2>
+
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Chi Tiết Tài Khoản</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Mã Tài Khoản:</strong> @accountInfo.account.Info.AccountCode</p>
+                <p><strong>Tên Tài Khoản:</strong> @accountInfo.account.Info.AccountName</p>
+                <p><strong>Địa Chỉ:</strong> @accountInfo.account.Info.Address</p>
+                <p><strong>Số Điện Thoại:</strong> @accountInfo.account.Info.Phone</p>
+                <p><strong>Email:</strong> @accountInfo.account.Info.Email</p>
+                <p><strong>Ngày Tạo:</strong> @accountInfo.account.Info.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+        </div>
+        <div class="container mt-4">
+            <div class="row">
+                @foreach (var contact in accountInfo.account.Contacts)
+                {
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">@contact.FirstName @contact.LastName</h5>
+                                <p class="card-text"><strong>Mobile:</strong> @contact.PhoneMobile</p>
+                                <p class="card-text"><strong>Home:</strong> @contact.PhoneHome</p>
+                                @if (!string.IsNullOrEmpty(contact.Email))
+                                {
+                                    <p class="card-text"><strong>Email:</strong> @contact.Email</p>
+                                }
+                                <p class="card-text"><strong>Description:</strong> @contact.Description</p>
+                                @if (!string.IsNullOrEmpty(contact.Title))
+                                {
+                                    <p class="card-text"><strong>Title:</strong> @contact.Title</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <h2 class="text-center mb-4">Danh Sách Đơn Hàng</h2>
+        @if (accountInfo.order != null && accountInfo.order.Count > 0)
+        {
+            foreach (var order in accountInfo.order)
+            {
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Đơn Hàng @order.OrderCode</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Loại Đơn Hàng:</strong> @order.OrderType</p>
+                        <p><strong>Tổng Tiền:</strong> @order.Amount</p>
+                        <p><strong>Ngày Đặt Hàng:</strong> @order.OrderDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        <p>
+                            <strong>Trạng Thái Thanh Toán: </strong>
+                            @if (order.PaymentStatus == "unpaid")
+                            {
+                                <span>Chưa Thanh Toán</span>
+                            }
+                            else if (order.PaymentStatus == "paid")
+                            {
+                                <span>Đã Thanh Toán</span>
+                            }
+                        </p>
+                        <p><strong>Người Tiếp Nhận:</strong> @order.AssignedName</p>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-warning" role="alert">
+                Không có đơn hàng nào.
+            </div>
+        }
+    </div>
+}
+@code {
+    private string orderId;
+    private object orderDetails;
+    private InfoAllAccount accountInfo;
+    private async Task SearchOrder()
+    {
+        accountInfo = await OrderService.GetOrderAsync(orderId);
+    }
+}

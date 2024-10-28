@@ -1,0 +1,150 @@
+﻿@page "/projecttypes"
+@inject IProjectTypeService ProjectTypeService
+@inject IJSRuntime JS
+@using AT.Share.Model
+<div class="container">
+    <h1 class="my-4">Quản lý loại dự án</h1>
+    <button class="btn btn-primary mb-3" @onclick="ShowAddModal">Thêm loại dự án mới</button>
+
+    <div class="overflow-auto">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th class="text-center">ID</th>
+                    <th class="text-center">Tên</th>
+                    <th class="text-center">Mô Tả</th>
+                    <th class="text-center">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var projectType in projectTypes)
+                {
+                    <tr>
+                        <td class="text-center">@projectType.Id</td>
+                        <td class="text-center">@projectType.Name</td>
+                        <td class="text-center">@projectType.Description</td>
+                        <td class="text-center">
+                            <button class="btn btn-warning me-2 mb-2" @onclick="() => ShowEditModal(projectType)">Sửa</button>
+                            <button class="btn btn-danger mb-2" @onclick="() => ShowDeleteConfirmation(projectType.Id)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (isModalVisible)
+    {
+        <div class="modal fade show" tabindex="-1" style="display: block;" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-center">@modalTitle</h5>
+                        <button type="button" class="btn-close" @onclick="HideModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (modalAction != "delete")
+                        {
+                            <EditForm Model="@selectedProjectType" OnValidSubmit="HandleValidSubmit">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
+
+                                <div class="mb-3 text-center">
+                                    <label for="name" class="form-label">Tên:</label>
+                                    <InputText id="name" class="form-control mx-auto" @bind-Value="selectedProjectType.Name" />
+                                </div>
+
+                                <div class="mb-3 text-center">
+                                    <label for="description" class="form-label">Mô Tả:</label>
+                                    <InputText id="description" class="form-control mx-auto" @bind-Value="selectedProjectType.Description" />
+                                </div>
+
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary">Lưu</button>
+                                    <button type="button" class="btn btn-secondary" @onclick="HideModal">Hủy</button>
+                                </div>
+                            </EditForm>
+                        }
+                        else
+                        {
+                            <p class="text-center">Bạn có chắc chắn muốn xóa loại dự án này?</p>
+                            <div class="text-center">
+                                <button type="button" class="btn btn-danger me-2 mb-2" @onclick="HandleDelete">Xóa</button>
+                                <button type="button" class="btn btn-secondary mb-2" @onclick="HideModal">Hủy</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ProjectTypeModel> projectTypes = new List<ProjectTypeModel>();
+    private ProjectTypeModel selectedProjectType = new ProjectTypeModel();
+    private bool isModalVisible = false;
+    private string modalTitle = "";
+    private string modalAction = ""; // "edit" or "delete"
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProjectTypes();
+    }
+
+    private async Task LoadProjectTypes()
+    {
+        projectTypes = await ProjectTypeService.GetProjectTypesAsync();
+    }
+
+    private void ShowAddModal()
+    {
+        selectedProjectType = new ProjectTypeModel();
+        modalTitle = "Thêm loại dự án";
+        modalAction = "add";
+        isModalVisible = true;
+    }
+
+    private void ShowEditModal(ProjectTypeModel projectType)
+    {
+        selectedProjectType = projectType;
+        modalTitle = "Sửa loại dự án";
+        modalAction = "edit";
+        isModalVisible = true;
+    }
+
+    private void ShowDeleteConfirmation(int id)
+    {
+        selectedProjectType = projectTypes.FirstOrDefault(pt => pt.Id == id);
+        modalTitle = "Xóa loại dự án";
+        modalAction = "delete";
+        isModalVisible = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (modalAction == "add")
+        {
+            await ProjectTypeService.AddProjectTypeAsync(selectedProjectType);
+        }
+        else if (modalAction == "edit")
+        {
+            await ProjectTypeService.UpdateProjectTypeAsync(selectedProjectType);
+        }
+
+        await LoadProjectTypes();
+        HideModal();
+    }
+
+    private async Task HandleDelete()
+    {
+        await ProjectTypeService.DeleteProjectTypeAsync(selectedProjectType.Id);
+        await LoadProjectTypes();
+        HideModal();
+    }
+
+    private void HideModal()
+    {
+        isModalVisible = false;
+    }
+}

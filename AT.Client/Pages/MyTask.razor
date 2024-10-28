@@ -1,0 +1,287 @@
+﻿@page "/mytask"
+@using AT.Client.Services.Interface
+@using AT.Share.Model
+@using AT.Client.Services.User;
+@inject IManagerTaskService ManagerTaskService
+@inject IManagerUserService ManagerUserService
+@inject ISearchOrderService SearchOrderService
+@inject IProgressService ProgressService
+@inject ITaskProgressHistoryService TaskProgressHistoryService
+@inject NavigationManager NavigationManager
+
+<div class="container">
+    <h1 class="my-4">My Tasks</h1>
+
+    <div class="overflow-auto">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th class="text-center">ID</th>
+                    <th class="text-center">Mã ĐH</th>
+                    <th class="text-center">Người thực hiện</th>
+                    <th class="text-center">Deadline</th>
+                    <th class="text-center">Tiến độ</th>
+                    <th class="text-center">Trạng thái</th>
+                    <th class="text-center">Ngày hoàn thành</th>
+                    <th class="text-center">Hành động</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in task)
+                {
+                    <tr>
+                        <td class="text-center">@item.Id</td>
+                        <td class="text-center">@item.OrderCode</td>
+                        <td class="text-center">@item.StaffName</td>
+                        <td class="text-center">@item.DueDate</td>
+                        <td class="text-center">@item.Progress</td>
+                        <td class="text-center">@item.Status</td>
+                        <td class="text-center">@item.DateFinish</td>
+                        <td class="text-center">
+                            <button class="btn btn-primary me-2 mb-2" @onclick="() => ShowViewTaskDetail(item.Id)">Xem</button>
+                            <button class="btn btn-warning me-2 mb-2" @onclick="() => ShowEditModal(item)">Sửa</button>
+                            @* <button class="btn btn-danger mb-2" @onclick="() => ShowDeleteConfirmation(item.Id)">Xóa</button> *@
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (isModalVisible)
+    {
+        <div class="modal fade show" tabindex="-1" style="display: block;" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-center">@modalTitle</h5>
+                        <button type="button" class="btn-close" @onclick="HideModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (modalAction != "delete")
+                        {
+                            <EditForm Model="@editTask" OnValidSubmit="HandleValidSubmit">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
+
+
+                                <div class="mb-3 text-center">
+                                    <div class="row">
+                                        <div class="col-md-8 text-center">
+                                            <label for="name" class="form-label">Mã ĐH:</label>
+                                            <InputText id="name" class="form-control mx-auto d-inline" style="width: 70%;" @bind-Value="editTask.OrderCode" readonly />
+                                        </div>
+                                        <div class="col-md-4 text-center">
+                                            <button type="button" class="btn btn-primary" @onclick="CheckOrderCode">Check</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+                                <div class="mb-3 text-center">
+                                    <label for="description" class="form-label">Người thực hiện:</label>
+                                    <div class="row">
+                                        <div class="col-md-8 text-center">
+                                            <InputText id="description" class="form-control mx-auto d-inline" style="width: 100%;" @bind-Value="editTask.StaffName" readonly />
+                                        </div>
+                                        <div class="col-md-4 text-center">
+                                            <button type="button" class="btn btn-primary" @onclick="TransferOrderTask">Chuyển</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3 text-center">
+                                    <label for="description" class="form-label">Ngày bắt đầu:</label>
+                                    <InputDate id="description" class="form-control mx-auto" @bind-Value="editTask.DateStart" />
+                                </div>
+
+                                <div class="mb-3 text-center">
+                                    <label for="description" class="form-label">Deadline:</label>
+                                    <InputDate id="description" class="form-control mx-auto" @bind-Value="editTask.DueDate" />
+                                </div>
+
+                                <div class="mb-3 text-center">
+                                    <label for="status" class="form-label">Tiến độ:</label>
+                                    <InputSelect id="status" class="form-control mx-auto" @bind-Value="editTask.Progress">
+                                        @foreach (var item in progressModels)
+                                        {
+                                            <option value="@item.Name">@item.Name</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+
+                                <div class="mb-3 text-center">
+                                    <label for="status" class="form-label">Status:</label>
+                                    <InputSelect id="status" class="form-control mx-auto" @bind-Value="editTask.Status">
+                                        <option value="Not started">Not started</option>
+                                        <option value="In progress">In progress</option>
+                                        <option value="Done">Done</option>
+                                        <option value="Late">Late</option>
+                                    </InputSelect>
+                                </div>
+
+                                <div class="mb-3 text-center">
+                                    <label for="description" class="form-label">Ngày hoàn thành:</label>
+                                    <InputDate id="description" class="form-control mx-auto" @bind-Value="editTask.DateFinish" />
+                                </div>
+
+
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary">Lưu</button>
+                                    <button type="button" class="btn btn-secondary" @onclick="HideModal">Hủy</button>
+                                </div>
+                            </EditForm>
+                        }
+                        else
+                        {
+                            <p class="text-center">Bạn có chắc chắn muốn xóa nhiệm vụ này?</p>
+                            <div class="text-center">
+                                <button type="button" class="btn btn-secondary mb-2" @onclick="HideModal">Hủy</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+@code {
+    private List<TaskModel> task = new List<TaskModel>();
+    private TaskModel editTask = new TaskModel();
+    private List<Staff> staff = new List<Staff>();
+    private Order order = new Order();
+    private List<ProgressModel> progressModels = new List<ProgressModel>();
+    //private TaskProgressHistory taskProgressHistory = new TaskProgressHistory();
+    private bool isModalVisible = false;
+    private string modalTitle = "";
+    private string modalAction = ""; // "edit" or "delete"
+    private bool isOrderModalVisible = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllByUserIdTask();
+        await LoadAllStaff();
+        await LoadProgress();
+
+    }
+
+
+    private async Task LoadAllByUserIdTask()
+    {
+        task = await ManagerTaskService.GetAllTaskByUserIdAsync();
+    }
+
+    private async Task LoadAllStaff()
+    {
+        staff = await ManagerUserService.GetAllUserAsync();
+    }
+
+    private async Task LoadProgress()
+    {
+        progressModels = await ProgressService.GetProgressesAsync();
+    }
+
+    private void ShowEditModal(TaskModel taskModel)
+    {
+        editTask = taskModel;
+        modalTitle = "Sửa nhiệm vụ";
+        modalAction = "edit";
+        isModalVisible = true;
+    }
+
+    private void ShowDeleteConfirmation(int id)
+    {
+        editTask = task.FirstOrDefault(task => task.Id == id);
+        modalTitle = "Xóa nhiệm vụ";
+        modalAction = "delete";
+        isModalVisible = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+
+        if (modalAction == "edit")
+        {
+            await ManagerTaskService.UpdateTaskAsync(editTask.Id, editTask);
+            var taskPresent = task.FirstOrDefault(task => task.Id == editTask.Id);
+            if (taskPresent.Progress != editTask.Progress)
+            {
+                var taskProgressHistory = new TaskProgressHistory()
+                    {
+                        TaskId = editTask.Id,
+                        Progress = editTask.Progress,
+                        Status = editTask.Status,
+                        UpdateDate = DateTime.Now,
+                        UpdatedBy = editTask.StaffId
+                    };
+                await TaskProgressHistoryService.PostTaskProgressHistoryAsync(taskProgressHistory);
+            }
+        }
+
+        await LoadAllByUserIdTask();
+        HideModal();
+    }
+
+
+    private void HideModal()
+    {
+        LoadAllByUserIdTask();
+        isModalVisible = false;
+    }
+    private void ShowOrderModal()
+    {
+        isOrderModalVisible = true;
+    }
+
+    private void HideOrderModal()
+    {
+        isOrderModalVisible = false;
+    }
+    // private void OnProgressChange(ChangeEventArgs e)
+    // {
+
+    //     string progress = e.Value?.ToString();
+
+    //     if (!string.IsNullOrEmpty(progress))
+    //     {
+    //         editTask.Progress = progress;
+    //         var selectedStaff = staff.FirstOrDefault(st => st.UserId == progress);
+
+    //         if (selectedStaff != null)
+    //         {
+    //             editTask.StaffName = selectedStaff.Name;
+    //         }
+    //     }
+    // }
+
+    private async Task CheckOrderCode()
+    {
+        if (!string.IsNullOrEmpty(editTask.OrderCode))
+        {
+            try
+            {
+                order = await SearchOrderService.GetOrderByCodeAsync(editTask.OrderCode);
+                ShowOrderModal();
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Có lỗi xảy ra");
+            }
+
+        }
+        else
+        {
+            Console.WriteLine("Vui lòng nhập Mã ĐH.");
+        }
+    }
+    private void TransferOrderTask()
+    {
+
+    }
+    private void ShowViewTaskDetail(int id)
+    {
+        NavigationManager.NavigateTo($"/task-detail/{id}");
+    }
+}

@@ -1,0 +1,189 @@
+﻿@page "/task-detail/{id:int}"
+@using AT.Share.Model;
+@using AT.Client.Services.Interface;
+@inject IManagerTaskService ManagerTaskService;
+@inject ISearchOrderService SearchOrderService;
+@* <h3>TaskDetail</h3>
+
+    <ul class=""> Thông tin tiến độ đơn hàng:
+        <li>Mã đơn hàng: @taskModel.OrderCode</li>
+        <li>Người thực hiện: @taskModel.StaffName</li>
+        <li>Ngày bắt đầu: @taskModel.DateStart</li>
+        <li>Ngày hết hạn: @taskModel.DueDate</li>
+        <li>Tiến độ: @taskModel.Progress</li>
+        <li>Tình trạng: @taskModel.Status</li>
+        <li>Ngày hoàn thành: @taskModel.DateFinish</li>
+    </ul>
+    <ul class="">
+        Thông tin đơn hàng:
+        <li>
+            @foreach (var prop in order.GetType().GetProperties())
+            {
+                <div>@prop.Name: @prop.GetValue(order)</div>
+            }
+        </li>
+    </ul>
+ *@
+
+<h3>Chi tiết Task</h3>
+
+<!-- Thanh tiến độ với các cột mốc -->
+<div class="timeline">
+    <div class="timeline-progress">
+        <div class="timeline-milestone" style="left: 0%;">
+            <span class="milestone-label">Bắt đầu</span>
+        </div>
+        <div class="timeline-milestone" style="left: 25%;">
+            <span class="milestone-label">25%</span>
+        </div>
+        <div class="timeline-milestone" style="left: 50%;">
+            <span class="milestone-label">50%</span>
+        </div>
+        <div class="timeline-milestone" style="left: 75%;">
+            <span class="milestone-label">75%</span>
+        </div>
+        <div class="timeline-milestone" style="left: 100%;">
+            <span class="milestone-label">Hoàn thành</span>
+        </div>
+    </div>
+</div>
+
+<!-- Thanh hiển thị phần trăm -->
+<div class="progress-bar">
+    <div class="progress" style="width: @taskModel.Progress;">@taskModel.Progress</div>
+</div>
+
+<div class="task-details">
+    <h4>Thông tin tiến độ đơn hàng:</h4>
+    <ul class="task-info">
+        <li><strong>Mã đơn hàng:</strong> @taskModel.OrderCode</li>
+        <li><strong>Người thực hiện:</strong> @taskModel.StaffName</li>
+        <li><strong>Ngày bắt đầu:</strong> @taskModel.DateStart.ToShortDateString()</li>
+        <li><strong>Số ngày làm:</strong> @countDay</li>
+        <li><strong>Ngày hết hạn:</strong> @taskModel.DueDate.ToShortDateString()</li>
+        <li><strong>Tiến độ:</strong> @taskModel.Progress%</li>
+        <li><strong>Tình trạng:</strong> @taskModel.Status</li>
+        <li><strong>Ngày hoàn thành:</strong> @taskModel.DateFinish.ToShortDateString()</li>
+    </ul>
+</div>
+
+<div class="order-details">
+    <h4>Thông tin đơn hàng:</h4>
+    <ul class="order-info">
+        @foreach (var prop in order.GetType().GetProperties())
+        {
+            <li><strong>@prop.Name:</strong> @prop.GetValue(order)</li>
+        }
+    </ul>
+</div>
+
+<style>
+    /* Các kiểu dáng cho thanh timeline */
+    .timeline {
+        position: relative;
+        height: 60px; /* Chiều cao của thanh timeline */
+        margin-bottom: 20px; /* Khoảng cách dưới thanh timeline */
+        background-color: #f3f3f3; /* Màu nền */
+        border-radius: 8px; /* Bo tròn góc */
+        padding: 10px 0; /* Khoảng cách bên trong */
+    }
+
+    .timeline-progress {
+        position: relative;
+        height: 100%; /* Chiều cao của thanh tiến độ */
+    }
+
+    .timeline-milestone {
+        position: absolute;
+        height: 20px; /* Chiều cao của mốc */
+        width: 20px; /* Chiều rộng của mốc */
+        background-color: #007BFF; /* Màu mốc */
+        border-radius: 50%; /* Biến mốc thành hình tròn */
+        top: 20px; /* Đặt mốc ở giữa thanh */
+        transform: translate(-50%, -50%); /* Căn giữa mốc */
+    }
+
+    .milestone-label {
+        position: absolute;
+        top: 35px; /* Đặt chữ chú thích dưới mốc */
+        left: 50%; /* Căn giữa theo chiều ngang */
+        transform: translateX(-50%); /* Căn giữa */
+        font-size: 12px; /* Kích thước chữ */
+        color: #333; /* Màu chữ */
+    }
+
+    .progress-bar {
+        background-color: #f3f3f3; /* Màu nền của thanh tiến độ */
+        border-radius: 8px; /* Bo tròn góc */
+        height: 30px; /* Chiều cao của thanh tiến độ */
+        margin-bottom: 20px; /* Khoảng cách dưới thanh tiến độ */
+        position: relative; /* Để chứa phần trăm */
+    }
+
+    .progress {
+        background-color: #007BFF; /* Màu nền của tiến độ */
+        height: 100%; /* Chiều cao của thanh tiến độ */
+        border-radius: 8px; /* Bo tròn góc */
+        color: white; /* Màu chữ phần trăm */
+        text-align: center; /* Căn giữa chữ */
+        line-height: 30px; /* Căn giữa theo chiều dọc */
+        font-weight: bold; /* In đậm chữ */
+    }
+
+    .task-details, .order-details {
+        border: 1px solid #ddd; /* Khung xung quanh */
+        border-radius: 8px; /* Bo tròn góc */
+        padding: 15px; /* Khoảng cách bên trong */
+        margin: 10px 0; /* Khoảng cách giữa các khối */
+        background-color: #f9f9f9; /* Màu nền nhẹ */
+    }
+
+    h3 {
+        text-align: center; /* Căn giữa tiêu đề chính */
+        color: #333; /* Màu chữ tiêu đề */
+    }
+
+    h4 {
+        color: #007BFF; /* Màu chữ tiêu đề con */
+        margin-bottom: 10px; /* Khoảng cách dưới tiêu đề con */
+    }
+
+    .task-info, .order-info {
+        list-style-type: none; /* Xóa dấu chấm đầu dòng */
+        padding: 0; /* Xóa padding */
+    }
+
+    li {
+        margin-bottom: 8px; /* Khoảng cách giữa các mục */
+        font-size: 16px; /* Kích thước chữ */
+    }
+
+    strong {
+        color: #555; /* Màu chữ cho các tiêu đề thuộc tính */
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    private TaskModel taskModel = new TaskModel();
+    private Order order = new Order();
+    private int countDay;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTaskById(Id);
+        await LoadOrderByCode(taskModel.OrderCode);
+        countDay = (DateTime.Now - taskModel.DateStart).Days;
+    }
+    private async Task LoadTaskById(int id)
+    {
+        taskModel = await ManagerTaskService.GetTaskByIdAsync(id);
+
+    }
+    private async Task LoadOrderByCode(string orderCode)
+    {
+        order = await SearchOrderService.GetOrderByCodeAsync(orderCode);
+    }
+
+}

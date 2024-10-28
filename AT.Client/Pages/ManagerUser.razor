@@ -1,0 +1,61 @@
+﻿@page "/manager-user"
+@using AT.Client.Services.Interface
+@using AT.Share.Model
+@inject IJSRuntime JS
+@inject IManagerUserService ManagerUserService
+<div class="container">
+    <h1 class="my-4">Quản lý người dùng</h1>
+    @* <button class="btn btn-primary mb-3" @onclick="ShowAddModal">Thêm loại dự án mới</button> *@
+
+    <div class="overflow-auto">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th class="text-center">ID</th>
+                    <th class="text-center">Tên</th>
+                    <th class="text-center">Vai trò</th>
+                    <th class="text-center">Phòng ban</th>
+                    <th class="text-center">Cập nhật</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in staffInfo)
+                {
+                    <tr>
+
+                        <td class="text-center">@item.staffs.Id</td>
+                        <td class="text-center">@item.staffs.Name</td>
+                        <td class="text-center">@item.GroupUserName</td>
+                        <td class="text-center">@item.DepartmentName</td>
+                        <td class="text-center">
+                            @* <button class="btn btn-warning me-2 mb-2" @onclick="() => ShowEditModal(projectType)">Sửa</button>
+                        <button class="btn btn-danger mb-2" @onclick="() => ShowDeleteConfirmation(projectType.Id)">Xóa</button> *@
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<Staff> staff = new List<Staff>();
+    private List<StaffInfo> staffInfo = new List<StaffInfo>();
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllUser();
+        await LoadAllUserInfo();
+    }
+
+    private async Task LoadAllUser()
+    {
+        staff = await ManagerUserService.GetAllUserAsync();
+    }
+
+    private async Task LoadAllUserInfo()
+    {
+        staffInfo = await ManagerUserService.GetAllUserInfoAsync();
+    }
+
+}

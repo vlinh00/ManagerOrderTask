@@ -1,0 +1,363 @@
+﻿@page "/manager-task"
+@using AT.Client.Services.Interface
+@using AT.Share.Model
+@using Blazored.Toast.Services
+@inject IManagerTaskService ManagerTaskService
+@inject IManagerUserService ManagerUserService
+@inject ISearchOrderService SearchOrderService
+@inject IDepartmentService DepartmentService
+@inject NavigationManager navigationManager
+@inject IToastService ToastService
+<div class="container">
+    <h1 class="my-4">Quản lý đơn hàng</h1>
+    <button class="btn btn-primary mb-3" @onclick="ShowAddModal">Thêm nhiệm vụ</button>
+
+    <div class="overflow-auto">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th class="text-center">ID</th>
+                    <th class="text-center">Mã ĐH</th>
+                    <th class="text-center">Người thực hiện</th>
+                    <th class="text-center">Trạng thái</th>
+                    <th class="text-center">Hành động</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in task)
+                {
+                    <tr>
+                        <td class="text-center">@item.Id</td>
+                        <td class="text-center">@item.OrderCode</td>
+                        <td class="text-center">@item.StaffName</td>
+                        <td class="text-center">@item.Status</td>
+                        <td class="text-center">
+                            <button class="btn btn-primary me-2 mb-2" @onclick="() => ShowViewTaskDetail(item.Id)">Xem</button>
+                            <button class="btn btn-warning me-2 mb-2" @onclick="() => ShowEditModal(item)">Sửa</button>
+                            <button class="btn btn-danger mb-2" @onclick="() => ShowDeleteConfirmation(item.Id)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (isModalVisible)
+    {
+        <div class="modal fade show" tabindex="-1" style="display: block;" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-center">@modalTitle</h5>
+                        <button type="button" class="btn-close" @onclick="HideModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (modalAction != "delete")
+                        {
+                            <EditForm Model="@editTask" OnValidSubmit="HandleValidSubmit">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
+
+                                @* <div class="mb-3 text-center">
+                        <div class="row">
+                        <label for="name" class="form-label">Mã ĐH:</label>
+                        <InputText id="name" class="form-control mx-auto" @bind-Value="editTask.OrderCode" />
+                        <button class="btn btn-primary">Check</button>
+                        </div>
+                        </div> *@
+
+                                <div class="mb-3 text-center">
+                                    <div class="row">
+                                        <div class="col-md-8 text-center">
+                                            <label for="name" class="form-label">Mã ĐH:</label>
+                                            <InputText id="name" class="form-control mx-auto d-inline" style="width: 70%;" @bind-Value="editTask.OrderCode" @oninput="OnOrderCodeChange"/>
+
+                                            <span class="ms-2">
+                                                @if (isOrderCodeValid)
+                                                {
+                                                    <i class="bi bi-check-circle-fill text-success" style="color: green !important;"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-x-circle-fill text-danger" style="color: red !important;"></i>
+                                                }
+                                            </span>
+                                        </div>
+                                        <div class="col-md-4 text-center">
+                                            <button type="button" class="btn btn-primary" @onclick="CheckOrderCode">Check</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+                                <div class="mb-3 text-center">
+                                    <label for="description" class="form-label">Người thực hiện:</label>
+                                    <select id="description" class="form-control mx-auto" @onchange="OnStaffChange">
+                                        <option value="">Chọn nhân viên</option>
+                                        @* @foreach (var item in staff)
+                                        {
+                                            <option value="@item.UserId">@item.Id - @item.Name</option>
+                                        } *@
+                                        @foreach (var group in groupedStaff)
+                                        {
+                                            @if (@group.DepartmentName != null)
+                                            {
+                                                <optgroup label="@group.DepartmentName">
+                                                    @foreach (var staff in group.Staffs)
+                                                    {
+                                                        <option value="@staff.UserId">@staff.Id - @staff.Name</option>
+                                                    }
+                                                </optgroup>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+
+                                @* <div class="mb-3 text-center">
+                        <label for="description" class="form-label">Ngày bắt đầu:</label>
+                        <InputDate id="description" class="form-control mx-auto" @bind-Value="editTask.DateStart" />
+                        </div>
+
+                        <div class="mb-3 text-center">
+                        <label for="description" class="form-label">Deadline:</label>
+                        <InputDate id="description" class="form-control mx-auto" @bind-Value="editTask.DueDate" />
+                        </div> *@
+
+                                <div class="mb-3 text-center">
+                                    <label for="status" class="form-label">Status:</label>
+                                    <InputSelect id="status" class="form-control mx-auto" @bind-Value="editTask.Status">
+                                        <option value="Not started">Not started</option>
+                                        <option value="In progress">In progress</option>
+                                        <option value="Done">Done</option>
+                                        <option value="Late">Late</option>
+                                    </InputSelect>
+                                </div>
+
+
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary">Lưu</button>
+                                    <button type="button" class="btn btn-secondary" @onclick="HideModal">Hủy</button>
+                                </div>
+                            </EditForm>
+                        }
+                        else
+                        {
+                            <p class="text-center">Bạn có chắc chắn muốn xóa nhiệm vụ này?</p>
+                            <div class="text-center">
+                                <button type="button" class="btn btn-danger me-2 mb-2" @onclick="HandleDelete">Xóa</button>
+                                <button type="button" class="btn btn-secondary mb-2" @onclick="HideModal">Hủy</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    <!--Order Modal -->
+    @if (isOrderModalVisible)
+    {
+        <div class="modal fade show" tabindex="-1" style="display: block;" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Thông tin Đơn Hàng</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="HideOrderModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Hiển thị thông tin Đơn hàng ở đây -->
+                        @if (order != null)
+                        {
+
+                            @foreach (var prop in order.GetType().GetProperties())
+                            {
+                                <p><strong>@prop.Name:</strong> @prop.GetValue(order)</p>
+                            }
+                        }
+                        else
+                        {
+                            <p>Không tìm thấy thông tin Đơn hàng.</p>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @onclick="HideOrderModal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TaskModel> task = new List<TaskModel>();
+    private TaskModel editTask = new TaskModel();
+    private List<Staff> staff = new List<Staff>();
+    private Order order = new Order();
+    private List<StaffGroupByDepartment> groupedStaff;
+    private bool isModalVisible = false;
+    private string modalTitle = "";
+    private string modalAction = ""; // "edit" or "delete"
+    private bool isOrderModalVisible = false;
+    private bool isOrderCodeValid = false;
+
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (firstRender)
+    //     {
+    //         StateHasChanged();
+    //         firstRender = false;
+    //     }
+    // }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllTask();
+        await LoadAllStaff();
+        await LoadAllStaffGroupByDepartment();
+    }
+
+    private async Task LoadAllTask()
+    {
+        task = await ManagerTaskService.GetAllTaskAsync();
+    }
+
+    private async Task LoadAllStaff()
+    {
+        staff = await ManagerUserService.GetAllUserAsync();
+    }
+
+    private async Task LoadAllStaffGroupByDepartment()
+    {
+        var departments = await DepartmentService.GetAllDepartmentAsync();
+        var staffs = await ManagerUserService.GetAllUserAsync();
+        groupedStaff = staffs.GroupBy(s => s.DepartmentId)
+                        .Select(g => new StaffGroupByDepartment
+                            {
+                                DepartmentName = departments.FirstOrDefault(d => d.Id == g.Key)?.Name,
+                                Staffs = g.ToList()
+                            }).ToList();
+    }
+
+    private void ShowAddModal()
+    {
+        isOrderCodeValid = false;
+        editTask = new TaskModel();
+        editTask.DateStart = DateTime.Today;
+        editTask.DueDate = DateTime.Today.AddDays(1);
+        editTask.Status = "Not started";
+        editTask.Progress = " ";
+        modalTitle = "Thêm nhiệm vụ mới";
+        modalAction = "add";
+        isModalVisible = true;
+    }
+
+    private void ShowEditModal(TaskModel taskModel)
+    {
+        editTask = taskModel;
+        modalTitle = "Sửa nhiệm vụ";
+        modalAction = "edit";
+        isModalVisible = true;
+    }
+
+    private void ShowDeleteConfirmation(int id)
+    {
+        editTask = task.FirstOrDefault(pt => pt.Id == id);
+        modalTitle = "Xóa nhiệm vụ";
+        modalAction = "delete";
+        isModalVisible = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (!isOrderCodeValid)
+        {
+            ToastService.ShowError("kiểm tra lại mã đơn hàng");
+            return;
+        }
+        if (modalAction == "add")
+        {
+            await ManagerTaskService.AddTaskAsync(editTask);
+        }
+        else if (modalAction == "edit")
+        {
+            await ManagerTaskService.UpdateTaskAsync(editTask.Id, editTask);
+        }
+
+        await LoadAllTask();
+        HideModal();
+    }
+
+    private async Task HandleDelete()
+    {
+        await ManagerTaskService.DeleteTaskAsync(editTask.Id);
+        await LoadAllTask();
+        HideModal();
+    }
+
+    private void HideModal()
+    {
+        LoadAllTask();
+        isModalVisible = false;
+    }
+    private void ShowOrderModal()
+    {
+        isOrderModalVisible = true;
+    }
+
+    private void HideOrderModal()
+    {
+        isOrderModalVisible = false;
+    }
+    private void OnStaffChange(ChangeEventArgs e)
+    {
+        string selectedId = e.Value?.ToString();
+
+        if (!string.IsNullOrEmpty(selectedId))
+        {
+            editTask.StaffId = selectedId;
+            var selectedStaff = staff.FirstOrDefault(st => st.UserId == selectedId);
+
+            if (selectedStaff != null)
+            {
+                editTask.StaffName = selectedStaff.Name;
+            }
+        }
+    }
+
+    private async Task OnOrderCodeChange(ChangeEventArgs e)
+    {
+        string orderCode = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(orderCode))
+        {
+            order = await SearchOrderService.GetOrderByCodeAsync(orderCode);
+            isOrderCodeValid = order != null;
+        }
+    }
+
+    private async Task CheckOrderCode()
+    {
+        if (!string.IsNullOrEmpty(editTask.OrderCode))
+        {
+            try
+            {
+                order = await SearchOrderService.GetOrderByCodeAsync(editTask.OrderCode);
+                isOrderCodeValid = order != null;
+                ShowOrderModal();
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Có lỗi xảy ra");
+            }
+
+        }
+        else
+        {
+            Console.WriteLine("Vui lòng nhập Mã ĐH.");
+        }
+    }
+    private void ShowViewTaskDetail(int id)
+    {
+        navigationManager.NavigateTo($"/task-detail/{id}");
+    }
+}
